@@ -70,5 +70,10 @@ contextBridge.exposeInMainWorld('videoAuditor', {
   startup: {
     diagnostic: () => ipcRenderer.invoke('startup:diagnostic'),
     repair: () => ipcRenderer.invoke('startup:repair')
+  },
+
+  quickReport: {
+    create: (analysisLocalId) => ipcRenderer.invoke('quickReport:create', analysisLocalId),
+    diagnostic: () => ipcRenderer.invoke('quickReport:diagnostic')
   }
 });
