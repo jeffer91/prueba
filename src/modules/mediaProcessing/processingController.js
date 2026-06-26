@@ -1,16 +1,20 @@
-function handleProcessImportedVideo() {
-  return Promise.resolve({
-    ok: false,
-    message: 'Procesamiento técnico pendiente de completar desde VS Code.'
-  });
+const {
+  processVideoWithMediaEngine,
+  getMediaEngineDiagnostic
+} = require('../mediaEngine/mediaEngineService');
+
+async function handleProcessImportedVideo(payload) {
+  return processVideoWithMediaEngine(payload || {});
 }
 
 function handleGetMediaProcessingDiagnostic() {
+  const engine = getMediaEngineDiagnostic();
+
   return {
     ok: true,
     module: 'mediaProcessing',
-    status: 'base',
-    message: 'Controlador base disponible. Falta completar motor FFmpeg real.'
+    status: 'connected_to_mediaEngine',
+    engine
   };
 }
 
