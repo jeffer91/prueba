@@ -63,6 +63,11 @@ const {
   handleStartupRepair
 } = require('../src/modules/startup/startupController');
 
+const {
+  handleCreateQuickReport,
+  handleQuickReportDiagnostic
+} = require('../src/modules/quickReport/quickReportController');
+
 let mainWindow = null;
 let ipcRegistered = false;
 
@@ -138,6 +143,9 @@ function registerBaseIpc() {
 
   ipcMain.handle('startup:diagnostic', async () => handleStartupDiagnostic());
   ipcMain.handle('startup:repair', async () => handleStartupRepair());
+
+  ipcMain.handle('quickReport:create', async (_event, analysisLocalId) => handleCreateQuickReport(analysisLocalId));
+  ipcMain.handle('quickReport:diagnostic', async () => handleQuickReportDiagnostic());
 
   ipcRegistered = true;
 }
