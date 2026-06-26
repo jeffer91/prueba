@@ -36,6 +36,13 @@ const {
   handleComparisonDiagnostic
 } = require('../src/modules/comparison/comparisonController');
 
+const {
+  handleCreateMasterTemplate,
+  handleListMasterTemplates,
+  handleGetMasterTemplate,
+  handleTemplateDiagnostic
+} = require('../src/modules/templates/templateController');
+
 let mainWindow = null;
 let ipcRegistered = false;
 
@@ -63,10 +70,7 @@ function registerBaseIpc() {
       filters: [{ name: 'Videos permitidos', extensions }]
     });
 
-    if (result.canceled || !result.filePaths.length) {
-      return { ok: true, canceled: true };
-    }
-
+    if (result.canceled || !result.filePaths.length) return { ok: true, canceled: true };
     const filePath = result.filePaths[0];
     return { ok: true, canceled: false, filePath, fileName: path.basename(filePath) };
   });
@@ -95,6 +99,11 @@ function registerBaseIpc() {
   ipcMain.handle('comparison:listAnalyses', async (_event, limit) => handleListComparableAnalyses(limit));
   ipcMain.handle('comparison:compare', async (_event, payload) => handleCompareAnalyses(payload));
   ipcMain.handle('comparison:diagnostic', async () => handleComparisonDiagnostic());
+
+  ipcMain.handle('templates:createMaster', async (_event, payload) => handleCreateMasterTemplate(payload));
+  ipcMain.handle('templates:list', async (_event, payload) => handleListMasterTemplates(payload));
+  ipcMain.handle('templates:get', async (_event, localId) => handleGetMasterTemplate(localId));
+  ipcMain.handle('templates:diagnostic', async () => handleTemplateDiagnostic());
 
   ipcRegistered = true;
 }
@@ -129,10 +138,7 @@ function createMainWindow() {
     if (!app.isPackaged) mainWindow.webContents.openDevTools({ mode: 'detach' });
   });
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-
+  mainWindow.on('closed', () => { mainWindow = null; });
   return mainWindow;
 }
 
