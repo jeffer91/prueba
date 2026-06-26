@@ -65,5 +65,10 @@ contextBridge.exposeInMainWorld('videoAuditor', {
     validate: (backupRoot) => ipcRenderer.invoke('restore:validate', backupRoot),
     plan: (payload = {}) => ipcRenderer.invoke('restore:plan', payload),
     diagnostic: () => ipcRenderer.invoke('restore:diagnostic')
+  },
+
+  startup: {
+    diagnostic: () => ipcRenderer.invoke('startup:diagnostic'),
+    repair: () => ipcRenderer.invoke('startup:repair')
   }
 });
