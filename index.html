@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Respaldo Firestore · titulos-ec2fa</title>
+  <style>
+    :root{
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:#172033;background:#f4f7fb;
+      --card:#fff;--muted:#667085;--border:#dde3ec;--primary:#0f62fe;
+      --ok:#087f5b;--warn:#b54708;--danger:#b42318;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#eef4ff,#f7f9fc 40%,#f4f7fb);min-height:100vh}
+    .wrap{max-width:920px;margin:0 auto;padding:40px 20px 60px}
+    .hero{margin-bottom:18px}
+    .eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--primary)}
+    h1{margin:6px 0 8px;font-size:clamp(30px,5vw,46px);line-height:1.05}
+    .lead{margin:0;color:var(--muted);line-height:1.55}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;margin-top:16px;box-shadow:0 12px 30px rgba(16,24,40,.07)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer}
+    .primary{background:var(--primary);color:#fff}
+    .secondary{background:#eef3fb;color:#22304a;border:1px solid var(--border)}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    input{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 12px;font:inherit}
+    .status{margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:#f8fafc}
+    .status.ok{background:#ecfdf5;border-color:#a6e3cf;color:#05603a}
+    .status.warn{background:#fffaeb;border-color:#f7c99e;color:#8a4600}
+    .status.danger{background:#fff1f0;border-color:#f3b5ae;color:#912018}
+    .progress{height:8px;border-radius:999px;background:#e8edf5;overflow:hidden;margin-top:12px;display:none}
+    .progress>div{height:100%;width:0;background:var(--primary);transition:width .2s}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+    .metric{border:1px solid var(--border);border-radius:12px;padding:14px;background:#fbfcfe}
+    .metric strong{display:block;font-size:24px}
+    .metric span{font-size:12px;color:var(--muted)}
+    .list{margin-top:14px;display:grid;gap:8px}
+    .item{display:flex;justify-content:space-between;gap:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fbfcfe}
+    .item code{font-size:13px}
+    .note{font-size:13px;color:var(--muted);line-height:1.55}
+    footer{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
+    @media(max-width:700px){.metrics{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <div class="eyebrow">Firestore · Respaldo</div>
+      <h1>Respaldo de base de datos</h1>
+      <p class="lead">Proyecto <strong>titulos-ec2fa</strong>. La aplicación solo lee datos y genera copias locales en PDF, TXT y JSON.</p>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0">1. Cargar datos</h2>
+      <p class="note">Colecciones raíz configuradas actualmente. Si existe otra, puedes escribirla abajo separada por comas.</p>
+      <div id="collectionList" class="list"></div>
+
+      <div style="margin-top:14px">
+        <label for="extra"><strong>Colecciones adicionales</strong></label>
+        <input id="extra" placeholder="Ej.: estudiantes, defensas, auditoria" />
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button id="loadBtn" class="primary">Cargar base de datos</button>
+        <button id="allBtn" class="secondary">Seleccionar todo</button>
+        <button id="noneBtn" class="secondary">Quitar selección</button>
+      </div>
+
+      <div id="progress" class="progress"><div id="progressBar"></div></div>
+      <div id="status" class="status">Lista para conectar con Firestore.</div>
+
+      <div class="metrics">
+        <div class="metric"><strong id="mCollections">0</strong><span>Colecciones cargadas</span></div>
+        <div class="metric"><strong id="mDocs">0</strong><span>Documentos</span></div>
+        <div class="metric"><strong id="mErrors">0</strong><span>Errores</span></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0">2. Descargar respaldo</h2>
+      <div class="row">
+        <button id="pdfBtn" class="primary" disabled>Descargar PDF</button>
+        <button id="txtBtn" class="primary" disabled>Descargar TXT</button>
+        <button id="jsonBtn" class="secondary" disabled>Descargar JSON</button>
+      </div>
+      <p class="note">Para respaldos grandes, JSON y TXT son los formatos más completos. El PDF es útil para revisión visual.</p>
+    </section>
+
+    <section class="card">
+      <h2 style="margin-top:0">Seguridad</h2>
+      <p class="note" style="margin-bottom:0">Esta página usa el SDK web de Firebase y respeta las reglas de Firestore. No contiene cuentas de servicio ni claves privadas. Si las reglas bloquean una lectura, se mostrará el error correspondiente.</p>
+    </section>
+
+    <footer>Respaldo Firestore · titulos-ec2fa</footer>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDkSOhJ552LwxQtt8GhP5iDJk49y0t4mOg",
+      authDomain: "titulos-ec2fa.firebaseapp.com",
+      projectId: "titulos-ec2fa",
+      storageBucket: "titulos-ec2fa.firebasestorage.app",
+      messagingSenderId: "14269419714",
+      appId: "1:14269419714:web:79df03c4df888c61edab5b",
+      measurementId: "G-4MC529QMW9"
+    };
+
+    const KNOWN_COLLECTIONS = [
+      "admin_vista_periodos",
+      "carreras",
+      "configuracion",
+      "coordinadores",
+      "envios"
+    ];
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const state = { data:{}, errors:{}, loadedAt:null };
+
+    const listEl = document.getElementById("collectionList");
+    const extraEl = document.getElementById("extra");
+    const loadBtn = document.getElementById("loadBtn");
+    const allBtn = document.getElementById("allBtn");
+    const noneBtn = document.getElementById("noneBtn");
+    const pdfBtn = document.getElementById("pdfBtn");
+    const txtBtn = document.getElementById("txtBtn");
+    const jsonBtn = document.getElementById("jsonBtn");
+    const statusEl = document.getElementById("status");
+    const progressEl = document.getElementById("progress");
+    const progressBar = document.getElementById("progressBar");
+    const mCollections = document.getElementById("mCollections");
+    const mDocs = document.getElementById("mDocs");
+    const mErrors = document.getElementById("mErrors");
+
+    function renderCollections(){
+      listEl.innerHTML="";
+      KNOWN_COLLECTIONS.forEach((name,i)=>{
+        const row=document.createElement("div");
+        row.className="item";
+        row.innerHTML='<label style="display:flex;gap:10px;align-items:center;cursor:pointer"><input style="width:auto" type="checkbox" value="'+name+'" checked> <code>'+name+'</code></label><span id="count-'+i+'" class="note">Sin cargar</span>';
+        listEl.appendChild(row);
+      });
+    }
+
+    function setStatus(msg,tone=""){
+      statusEl.className="status"+(tone?" "+tone:"");
+      statusEl.textContent=msg;
+    }
+
+    function setBusy(busy){
+      loadBtn.disabled=busy; allBtn.disabled=busy; noneBtn.disabled=busy; extraEl.disabled=busy;
+      progressEl.style.display=busy?"block":"none";
+      if(!busy) progressBar.style.width="0%";
+    }
+
+    function normalize(v){
+      if(v===null||v===undefined) return v;
+      if(Array.isArray(v)) return v.map(normalize);
+      if(v instanceof Date) return v.toISOString();
+      if(typeof v==="object"){
+        if(typeof v.toDate==="function"){ try{return v.toDate().toISOString()}catch(e){} }
+        if(typeof v.latitude==="number"&&typeof v.longitude==="number") return {latitude:v.latitude,longitude:v.longitude};
+        if(typeof v.path==="string"&&v.firestore) return {reference:v.path};
+        if(typeof v.toBase64==="function"){ try{return {bytesBase64:v.toBase64()}}catch(e){} }
+        const o={}; Object.keys(v).forEach(k=>o[k]=normalize(v[k])); return o;
+      }
+      return v;
+    }
+
+    function selectedNames(){
+      const selected=[...listEl.querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value.trim()).filter(Boolean);
+      const extra=extraEl.value.split(",").map(x=>x.trim()).filter(Boolean);
+      return [...new Set([...selected,...extra])];
+    }
+
+    function updateMetrics(){
+      const names=Object.keys(state.data);
+      const docs=names.reduce((n,k)=>n+state.data[k].length,0);
+      const errors=Object.keys(state.errors).length;
+      mCollections.textContent=names.length;
+      mDocs.textContent=docs;
+      mErrors.textContent=errors;
+      const ok=names.length>0;
+      pdfBtn.disabled=!ok; txtBtn.disabled=!ok; jsonBtn.disabled=!ok;
+    }
+
+    async function loadData(){
+      const names=selectedNames();
+      if(!names.length){ setStatus("Selecciona al menos una colección.","warn"); return; }
+
+      state.data={}; state.errors={}; state.loadedAt=null;
+      updateMetrics(); setBusy(true);
+
+      let done=0;
+      for(const name of names){
+        setStatus("Leyendo "+name+"…");
+        try{
+          const snap=await getDocs(collection(db,name));
+          state.data[name]=snap.docs.map(d=>({id:d.id,data:normalize(d.data())}));
+          const idx=KNOWN_COLLECTIONS.indexOf(name);
+          if(idx>=0) document.getElementById("count-"+idx).textContent=state.data[name].length+" doc.";
+        }catch(err){
+          state.errors[name]=err?.message||String(err);
+          const idx=KNOWN_COLLECTIONS.indexOf(name);
+          if(idx>=0) document.getElementById("count-"+idx).textContent="Error";
+        }
+        done++;
+        progressBar.style.width=Math.round(done/names.length*100)+"%";
+        updateMetrics();
+      }
+
+      state.loadedAt=new Date();
+      setBusy(false);
+      updateMetrics();
+
+      const ec=Object.keys(state.errors).length;
+      if(ec) setStatus("Carga terminada con "+ec+" error(es). Revisa reglas de Firestore o nombres de colección.","warn");
+      else setStatus("Base cargada correctamente.","ok");
+    }
+
+    function exportObject(){
+      return {
+        projectId:firebaseConfig.projectId,
+        generatedAt:new Date().toISOString(),
+        loadedAt:state.loadedAt?state.loadedAt.toISOString():null,
+        collections:state.data,
+        errors:state.errors
+      };
+    }
+
+    function stamp(){
+      const d=new Date(), p=n=>String(n).padStart(2,"0");
+      return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"_"+p(d.getHours())+"-"+p(d.getMinutes());
+    }
+
+    function downloadBlob(blob,name){
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+
+    function downloadJson(){
+      downloadBlob(new Blob([JSON.stringify(exportObject(),null,2)],{type:"application/json;charset=utf-8"}),"titulos_firestore_"+stamp()+".json");
+    }
+
+    function buildTxt(){
+      const lines=[];
+      lines.push("RESPALDO FIRESTORE");
+      lines.push("Proyecto: "+firebaseConfig.projectId);
+      lines.push("Generado: "+new Date().toLocaleString("es-EC"));
+      lines.push("=".repeat(72),"");
+      for(const name of Object.keys(state.data)){
+        lines.push("COLECCION: "+name);
+        lines.push("DOCUMENTOS: "+state.data[name].length);
+        lines.push("-".repeat(72));
+        state.data[name].forEach((item,i)=>{
+          lines.push("DOCUMENTO "+(i+1)+": "+item.id);
+          lines.push(JSON.stringify(item.data,null,2),"");
+        });
+        lines.push("=".repeat(72),"");
+      }
+      if(Object.keys(state.errors).length){
+        lines.push("ERRORES");
+        lines.push(JSON.stringify(state.errors,null,2));
+      }
+      return lines.join("\n");
+    }
+
+    function downloadTxt(){
+      downloadBlob(new Blob(["\ufeff",buildTxt()],{type:"text/plain;charset=utf-8"}),"titulos_firestore_"+stamp()+".txt");
+    }
+
+    async function downloadPdf(){
+      if(!window.jspdf?.jsPDF){ setStatus("No se pudo cargar la librería PDF.","danger"); return; }
+      pdfBtn.disabled=true; setStatus("Generando PDF…");
+      await new Promise(r=>setTimeout(r,20));
+      try{
+        const {jsPDF}=window.jspdf;
+        const doc=new jsPDF({unit:"mm",format:"a4",compress:true});
+        const margin=14, pageH=297, pageW=210, usable=pageW-margin*2;
+        let y=18;
+
+        const ensure=h=>{ if(y+h>pageH-16){ doc.addPage(); y=18; } };
+        const write=(text,{size=9,bold=false,mono=false,gap=1.4,indent=0}={})=>{
+          doc.setFont(mono?"courier":"helvetica",bold?"bold":"normal");
+          doc.setFontSize(size);
+          const lh=(size*1.22)/2.83465;
+          const arr=doc.splitTextToSize(String(text).replace(/\t/g,"    "),usable-indent);
+          arr.forEach(line=>{ ensure(lh+1); doc.text(line,margin+indent,y); y+=lh; });
+          y+=gap;
+        };
+
+        write("RESPALDO FIRESTORE",{size:17,bold:true,gap:3});
+        write("Proyecto: "+firebaseConfig.projectId,{size:10});
+        write("Generado: "+new Date().toLocaleString("es-EC"),{size:10,gap:5});
+
+        for(const name of Object.keys(state.data)){
+          ensure(16);
+          write("COLECCION: "+name,{size:13,bold:true});
+          write("Documentos: "+state.data[name].length,{size:9,gap:3});
+          state.data[name].forEach((item,i)=>{
+            ensure(12);
+            write("Documento "+(i+1)+": "+item.id,{size:10,bold:true});
+            JSON.stringify(item.data,null,2).split("\n").forEach(line=>write(line,{size:7.5,mono:true,indent:2,gap:.35}));
+            y+=2;
+          });
+          y+=3;
+        }
+
+        if(Object.keys(state.errors).length){
+          write("ERRORES",{size:13,bold:true,gap:2});
+          JSON.stringify(state.errors,null,2).split("\n").forEach(line=>write(line,{size:8,mono:true,gap:.5}));
+        }
+
+        const pages=doc.getNumberOfPages();
+        for(let p=1;p<=pages;p++){
+          doc.setPage(p); doc.setFont("helvetica","normal"); doc.setFontSize(8);
+          doc.text("Firestore · titulos-ec2fa",margin,290);
+          doc.text("Página "+p+" de "+pages,196,290,{align:"right"});
+        }
+        doc.save("titulos_firestore_"+stamp()+".pdf");
+        setStatus("PDF generado correctamente.","ok");
+      }catch(err){
+        setStatus("No se pudo generar el PDF: "+(err?.message||String(err)),"danger");
+      }finally{
+        pdfBtn.disabled=Object.keys(state.data).length===0;
+      }
+    }
+
+    allBtn.addEventListener("click",()=>listEl.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=true));
+    noneBtn.addEventListener("click",()=>listEl.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=false));
+    loadBtn.addEventListener("click",loadData);
+    txtBtn.addEventListener("click",downloadTxt);
+    jsonBtn.addEventListener("click",downloadJson);
+    pdfBtn.addEventListener("click",downloadPdf);
+
+    renderCollections();
+    updateMetrics();
+  </script>
+</body>
+</html>
