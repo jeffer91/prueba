@@ -80,12 +80,11 @@ for(const [key,cfg] of Object.entries(sources)){
 
 const select=document.getElementById("base"),status=document.getElementById("status"),meta=document.getElementById("meta"),extra=document.getElementById("extra"),extraWrap=document.getElementById("extraWrap"),txtBtn=document.getElementById("txt"),xlsBtn=document.getElementById("xls");
 
-for(const provider of ["Firebase","Supabase","Neon"]){
-  const group=document.createElement("optgroup"); group.label=provider;
-  for(const [key,cfg] of Object.entries(sources).filter(([,v])=>v.provider===provider)){
-    const o=document.createElement("option"); o.value=key;o.textContent=cfg.label;group.appendChild(o);
-  }
-  select.appendChild(group);
+for(const [key,cfg] of Object.entries(sources)){
+  const o=document.createElement("option");
+  o.value=key;
+  o.textContent=cfg.label;
+  select.appendChild(o);
 }
 
 function current(){return sources[select.value]}
