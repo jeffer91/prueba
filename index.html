@@ -31,8 +31,15 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <h1>Centro de respaldos</h1>
   <p>Firebase, Supabase y Neon en un solo lugar. Las conexiones respetan las reglas de acceso de cada plataforma.</p>
   <div class="box">
+    <label for="provider">Plataforma</label>
+    <select id="provider">
+      <option value="" selected disabled>Selecciona una plataforma…</option>
+      <option value="Firebase">Firebase</option>
+      <option value="Supabase">Supabase</option>
+      <option value="Neon">Neon</option>
+    </select>
     <label for="base">Base de datos</label>
-    <select id="base">
+    <select id="base" disabled>
       <option value="" selected disabled>Selecciona una base…</option>
     </select>
     <div class="meta" id="meta"></div>
@@ -78,13 +85,19 @@ for(const [key,cfg] of Object.entries(sources)){
   if(cfg.provider==="Firebase") apps[key]=initializeApp(cfg.firebaseConfig,key);
 }
 
-const select=document.getElementById("base"),status=document.getElementById("status"),meta=document.getElementById("meta"),extra=document.getElementById("extra"),extraWrap=document.getElementById("extraWrap"),txtBtn=document.getElementById("txt"),xlsBtn=document.getElementById("xls");
+const providerSelect=document.getElementById("provider"),select=document.getElementById("base"),status=document.getElementById("status"),meta=document.getElementById("meta"),extra=document.getElementById("extra"),extraWrap=document.getElementById("extraWrap"),txtBtn=document.getElementById("txt"),xlsBtn=document.getElementById("xls");
 
-for(const [key,cfg] of Object.entries(sources)){
-  const o=document.createElement("option");
-  o.value=key;
-  o.textContent=cfg.label;
-  select.appendChild(o);
+function fillBases(){
+  select.innerHTML='<option value="" selected disabled>Selecciona una base…</option>';
+  const provider=providerSelect.value;
+  for(const [key,cfg] of Object.entries(sources).filter(([,v])=>v.provider===provider)){
+    const o=document.createElement("option");
+    o.value=key;
+    o.textContent=cfg.label;
+    select.appendChild(o);
+  }
+  select.disabled=!provider;
+  setMeta();
 }
 
 function current(){return sources[select.value]}
@@ -106,6 +119,7 @@ function setMeta(){
   else if(c.provider==="Neon") status.textContent="Proyecto, rama, base y tablas verificados. El acceso web requiere Data API + autenticación; no se exponen credenciales Postgres.";
   else status.textContent="Conexión lista. Puedes descargar el respaldo permitido por las reglas de la base.";
 }
+providerSelect.addEventListener("change",fillBases);
 select.addEventListener("change",setMeta); setMeta();
 
 function busy(v){txtBtn.disabled=v;xlsBtn.disabled=v;if(v)status.textContent="Leyendo base de datos…"}
