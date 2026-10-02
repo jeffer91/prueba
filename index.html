@@ -32,7 +32,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <p>Firebase, Supabase y Neon en un solo lugar. Las conexiones respetan las reglas de acceso de cada plataforma.</p>
   <div class="box">
     <label for="base">Base de datos</label>
-    <select id="base"></select>
+    <select id="base">
+      <option value="" selected disabled>Selecciona una base…</option>
+    </select>
     <div class="meta" id="meta"></div>
     <div id="extraWrap" hidden>
       <label for="extra">Colecciones adicionales</label>
@@ -40,8 +42,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
       <div class="hint">Útil cuando Firestore no permite descubrir colecciones raíz desde el navegador.</div>
     </div>
     <div class="row">
-      <button id="txt" class="txt">Descargar TXT</button>
-      <button id="xls" class="xls">Descargar Excel</button>
+      <button id="txt" class="txt" disabled>Descargar TXT</button>
+      <button id="xls" class="xls" disabled>Descargar Excel</button>
     </div>
     <div id="status">Selecciona una base.</div>
   </div>
@@ -89,8 +91,18 @@ for(const provider of ["Firebase","Supabase","Neon"]){
 function current(){return sources[select.value]}
 function setMeta(){
   const c=current();
+  if(!c){
+    meta.innerHTML="";
+    extraWrap.hidden=true;
+    txtBtn.disabled=true;
+    xlsBtn.disabled=true;
+    status.textContent="Selecciona la base de datos que quieres usar.";
+    return;
+  }
   meta.innerHTML=`<span class="pill">${c.provider}</span><span class="pill ${c.state.includes("Conectado")||c.state.includes("activa")?"ok":"wait"}">${c.state}</span><span class="pill">${c.projectId}</span>`;
   extraWrap.hidden=c.type!=="firestore";
+  txtBtn.disabled=false;
+  xlsBtn.disabled=false;
   if(c.provider==="Supabase"&&c.state.includes("Pausado")) status.textContent="Proyecto registrado. Está pausado para mantener el plan gratuito; reactívalo en Supabase cuando necesites leerlo.";
   else if(c.provider==="Neon") status.textContent="Proyecto, rama, base y tablas verificados. El acceso web requiere Data API + autenticación; no se exponen credenciales Postgres.";
   else status.textContent="Conexión lista. Puedes descargar el respaldo permitido por las reglas de la base.";
@@ -134,7 +146,9 @@ function flatten(obj,p="",out={}){for(const [k,v] of Object.entries(obj||{})){co
 function rows(v){if(Array.isArray(v))return v.map(x=>flatten(x&&typeof x==="object"?x:{valor:x}));if(v&&typeof v==="object")return Object.entries(v).map(([id,x])=>flatten({id,...(x&&typeof x==="object"?x:{valor:x})}));return [{valor:v}]}
 
 async function exportBase(format){
-  busy(true);const key=select.value,cfg=current();
+  const key=select.value,cfg=current();
+  if(!cfg){status.textContent="Primero selecciona una base de datos.";return}
+  busy(true);
   try{
     const data=await readBase(key),name=(cfg.projectId||cfg.database||key)+"_"+stamp();
     if(format==="txt")saveBlob("\ufeff"+JSON.stringify(data,null,2),name+".txt","text/plain;charset=utf-8");
